@@ -1,0 +1,6 @@
+{
+  "name": "Daily Content Command",
+  "description": "A high-velocity content planner for blogs and Pinterest accounts with AI-driven competitor research and automation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

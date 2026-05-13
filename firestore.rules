@@ -1,0 +1,112 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Blog Rules ---
+    match /blogs/{blogId} {
+      function isValidBlog(data) {
+        return data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+               data.url is string && data.url.size() > 0 && data.url.size() <= 2048 &&
+               data.userId == request.auth.uid &&
+               data.status in ['active', 'archived'];
+      }
+
+      allow create: if isSignedIn() && isValidId(blogId) && isValidBlog(incoming()) && 
+                    incoming().keys().hasAll(['name', 'url', 'userId', 'status']) && 
+                    incoming().keys().size() == 4;
+      
+      allow update: if isSignedIn() && isOwner(existing().userId) && isValidBlog(incoming()) &&
+                    incoming().userId == existing().userId;
+      
+      allow delete: if isSignedIn() && isOwner(existing().userId);
+      
+      allow read: if isSignedIn() && (resource == null || isOwner(existing().userId));
+    }
+
+    // --- Pinterest Account Rules ---
+    match /pinterestAccounts/{pinId} {
+      function isValidPin(data) {
+        return data.name is string && data.name.size() <= 100 &&
+               data.blogId is string &&
+               data.userId == request.auth.uid;
+      }
+
+      allow create: if isSignedIn() && isValidId(pinId) && isValidPin(incoming()) &&
+                    exists(/databases/$(database)/documents/blogs/$(incoming().blogId)) &&
+                    get(/databases/$(database)/documents/blogs/$(incoming().blogId)).data.userId == request.auth.uid;
+      
+      allow update: if isSignedIn() && isOwner(existing().userId) && isValidPin(incoming()) &&
+                    incoming().userId == existing().userId;
+      
+      allow delete: if isSignedIn() && isOwner(existing().userId);
+      
+      allow read: if isSignedIn() && (resource == null || isOwner(existing().userId));
+    }
+
+    // --- Source Rules ---
+    match /sources/{sourceId} {
+      function isValidSource(data) {
+        return data.url is string && data.url.size() <= 2048 &&
+               data.blogId is string &&
+               data.userId == request.auth.uid &&
+               data.status in ['new', 'processed', 'ignored'] &&
+               data.createdAt is number;
+      }
+
+      allow create: if isSignedIn() && isValidId(sourceId) && isValidSource(incoming());
+      
+      allow update: if isSignedIn() && isOwner(existing().userId) && isValidSource(incoming()) &&
+                    incoming().userId == existing().userId;
+      
+      allow delete: if isSignedIn() && isOwner(existing().userId);
+      
+      allow read: if isSignedIn() && (resource == null || isOwner(existing().userId));
+    }
+
+    // --- Task Rules ---
+    match /tasks/{taskId} {
+      function isValidTask(data) {
+        return data.blogId is string &&
+               data.date is string && data.date.size() == 10 &&
+               data.title is string && data.title.size() <= 200 &&
+               data.articleStatus in ['pending', 'drafted', 'posted'] &&
+               data.userId == request.auth.uid &&
+               data.pins is list && data.pins.size() <= 10;
+      }
+
+      allow create: if isSignedIn() && isValidId(taskId) && isValidTask(incoming());
+      
+      allow update: if isSignedIn() && isOwner(existing().userId) && isValidTask(incoming()) &&
+                    incoming().userId == existing().userId;
+      
+      allow delete: if isSignedIn() && isOwner(existing().userId);
+      
+      allow read: if isSignedIn() && (resource == null || isOwner(existing().userId));
+    }
+  }
+}

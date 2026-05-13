@@ -1,0 +1,73 @@
+{
+  "entities": {
+    "Blog": {
+      "title": "Blog",
+      "description": "A blog website to manage content for.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "url": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "archived"] }
+      },
+      "required": ["name", "url"]
+    },
+    "PinterestAccount": {
+      "title": "Pinterest Account",
+      "description": "A Pinterest account linked to a blog.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "blogId": { "type": "string" },
+        "handle": { "type": "string" }
+      },
+      "required": ["name", "blogId"]
+    },
+    "Source": {
+      "title": "Competitor Source",
+      "description": "A competitor article tracked as research source.",
+      "type": "object",
+      "properties": {
+        "url": { "type": "string" },
+        "title": { "type": "string" },
+        "excerpt": { "type": "string" },
+        "blogId": { "type": "string" },
+        "status": { "type": "string", "enum": ["new", "processed", "ignored"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["url", "blogId"]
+    },
+    "DailyTask": {
+      "title": "Daily Task",
+      "description": "A specific content piece scheduled for a specific day.",
+      "type": "object",
+      "properties": {
+        "blogId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "title": { "type": "string" },
+        "competitorUrl": { "type": "string" },
+        "articleStatus": { "type": "string", "enum": ["pending", "drafted", "posted"] },
+        "summary": { "type": "string" },
+        "outline": { "type": "string" },
+        "draft": { "type": "string" },
+        "pins": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "idea": { "type": "string" },
+              "caption": { "type": "string" },
+              "status": { "type": "string", "enum": ["pending", "posted"] }
+            }
+          }
+        }
+      },
+      "required": ["blogId", "date", "title"]
+    }
+  },
+  "firestore": {
+    "blogs": { "schema": "Blog", "description": "Managed blogs" },
+    "pinterestAccounts": { "schema": "PinterestAccount", "description": "Linked Pinterest accounts" },
+    "sources": { "schema": "Source", "description": "Competitor research sources" },
+    "tasks": { "schema": "DailyTask", "description": "Daily content production tasks" }
+  }
+}
